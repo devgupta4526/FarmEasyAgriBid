@@ -24,7 +24,7 @@ async function bootstrap() {
   // Initialize Socket.IO for real-time features
   initSocket(httpServer);
 
-  httpServer.listen(PORT, '127.0.0.1', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     logger.info(`🚀 AgriBid API running on port ${PORT}`, {
       env: process.env.NODE_ENV,
       port: PORT,
