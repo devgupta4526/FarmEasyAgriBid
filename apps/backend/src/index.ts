@@ -15,8 +15,7 @@ async function bootstrap() {
     client.release();
     logger.info('✅ Database connected');
   } catch (err) {
-    logger.error('❌ Database connection failed', { error: err });
-    process.exit(1);
+    logger.warn('⚠️ Database connection failed - server starting in offline/limited mode', { error: (err as Error).message });
   }
 
   const app = createApp();

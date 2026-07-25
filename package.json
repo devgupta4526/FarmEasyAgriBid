@@ -2,6 +2,7 @@
   "name": "agribid",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.8.2",
   "description": "AgriBid – AI-Powered Farmer Marketplace",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {

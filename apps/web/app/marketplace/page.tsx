@@ -171,7 +171,7 @@ export default function MarketplacePage() {
   const { data, isLoading } = useQuery({
     queryKey: ['products', params],
     queryFn: () => productApi.list(params) as Promise<{ products: Product[]; pagination: { total: number; pages: number } }>,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 
   const sortOptions = [

@@ -35,7 +35,7 @@ export default function AIAdvisorPage() {
   const { toast } = useToast();
   const [activeFeature, setActiveFeature] = useState<FeatureId>('price');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<any>(null);
 
   // Price Advisor state
   const [crop, setCrop] = useState('');

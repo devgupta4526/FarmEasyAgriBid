@@ -4,9 +4,27 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+const envPath = path.resolve(__dirname, "../../../../.env");
+
+console.log("__dirname =", __dirname);
+console.log("Resolved .env =", envPath);
+
+const result = dotenv.config({
+  path: envPath,
+});
+
+console.log("dotenv result =", result);
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// dotenv.config({ path: path.join(__dirname, '../../../.env') });
+// console.log("DATABASE_URL =", process.env.DATABASE_URL);
+// const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function runMigrations() {
   const client = await pool.connect();

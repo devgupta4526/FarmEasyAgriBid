@@ -225,7 +225,9 @@ All AI endpoints: Rate limited to 30 req/hour per user.
 
 ## Environment Variables
 
-See `.env.example` for complete list. Key variables:
+For step-by-step instructions on obtaining all API keys and configuring `.env`, refer to the detailed [Environment Setup Guide](file:///e:/FarmEasyAgriBid/FarmEasyAgriBid/docs/ENV_SETUP_GUIDE.md).
+
+Key variables overview:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -243,30 +245,28 @@ See `.env.example` for complete list. Key variables:
 
 ## Deployment Guide
 
-### Frontend (Vercel)
+For a complete step-by-step walkthrough on deploying AgriBid 100% free of cost, see the dedicated [Free Deployment Guide](file:///e:/FarmEasyAgriBid/FarmEasyAgriBid/docs/FREE_DEPLOYMENT_GUIDE.md).
 
-1. Push to GitHub
-2. Connect repo to Vercel
-3. Set environment variables in Vercel Dashboard
-4. Deploy — Vercel auto-deploys on push to `main`
+### Quick Deployment Overview:
 
-### Backend (Render)
+#### Frontend (Vercel)
+1. Push repo to GitHub.
+2. Connect repo to Vercel and set Root Directory to `apps/web`.
+3. Set environment variables (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, etc.).
+4. Deploy — Vercel auto-deploys on push to `main`.
 
-1. Create Web Service on render.com
-2. Connect GitHub repo
-3. Set **Root Directory** to `apps/backend`
-4. Build command: `npm ci && npm run build`
-5. Start command: `node dist/index.js`
-6. Set all environment variables
-7. Free tier: 512MB RAM, 0.1 CPU
+#### Backend (Render)
+1. Create Web Service on render.com.
+2. Connect GitHub repo and set **Root Directory** to `apps/backend`.
+3. Build command: `npm ci && npm run build`
+4. Start command: `node dist/index.js`
+5. Set environment variables (`DATABASE_URL`, `JWT_SECRET`, `GEMINI_API_KEY`, etc.).
 
-### Database (Supabase)
-
-1. Create project at supabase.com
-2. Go to SQL Editor
-3. Run `apps/backend/src/db/migrations/001_initial_schema.sql`
-4. Run `apps/backend/src/db/migrations/002_seed_categories.sql`
-5. Copy `DATABASE_URL` from Settings > Database
+#### Database (Supabase)
+1. Create project at supabase.com.
+2. Run SQL migrations (`001_initial_schema.sql` and `002_seed_categories.sql`).
+3. Create 4 public storage buckets (`product-images`, `documents`, `videos`, `avatars`).
+4. Copy `DATABASE_URL` from Settings > Database.
 
 ---
 
