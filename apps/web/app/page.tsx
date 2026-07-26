@@ -81,6 +81,7 @@ const categories = [
   { name: 'Spices', emoji: '🌶️', slug: 'spices' },
   { name: 'Flowers', emoji: '🌸', slug: 'flowers' },
   { name: 'Honey', emoji: '🍯', slug: 'honey' },
+  { name: 'Others', emoji: '🫑', slug: 'others' },
 ];
 
 export default function HomePage() {
