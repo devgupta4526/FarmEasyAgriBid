@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { query, queryOne } from '../db/pool';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middleware';
 import { logger } from '../utils/logger';
@@ -6,7 +6,7 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // GET /wallet — my wallet
-router.get('/', authenticate, async (req: AuthRequest, res) => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const wallet = await queryOne(
       'SELECT id, balance, escrow_balance, reward_balance, total_credited, total_debited FROM wallets WHERE user_id = $1',
@@ -21,11 +21,11 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 // GET /wallet/transactions
-router.get('/transactions', authenticate, async (req: AuthRequest, res) => {
+router.get('/transactions', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 20 } = req.query as Record<string, string>;
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(50, parseInt(limit, 10));
+    const { page = '1', limit = '20' } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(String(page), 10));
+    const limitNum = Math.min(50, parseInt(String(limit), 10));
     const offset = (pageNum - 1) * limitNum;
 
     const transactions = await query(

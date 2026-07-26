@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { body, query as qv, param } from 'express-validator';
 import { query, queryOne } from '../db/pool';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middleware';
@@ -8,7 +8,7 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // GET /products — list with filters
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const {
       category, search, minPrice, maxPrice, isOrganic, listingType,
@@ -115,7 +115,7 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // GET /products/:id
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res: Response) => {
   try {
     const product = await queryOne(
       `SELECT p.*,
@@ -163,7 +163,7 @@ router.post(
     body('quantity_unit').isIn(['kg', 'ton', 'quintal', 'piece', 'dozen', 'litre', 'bundle']),
   ],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const {
       title, description, category_id, listing_type, base_price, buy_now_price,
       quantity_available, quantity_unit, quality_grade, is_organic, harvest_date,
@@ -173,7 +173,7 @@ router.post(
     } = req.body;
 
     try {
-      const products = await query(
+      const products = await query<{ id: string }>(
         `INSERT INTO products (
           farmer_id, category_id, title, description, listing_type, status,
           base_price, buy_now_price, quantity_available, quantity_unit,
@@ -209,7 +209,7 @@ router.patch(
   '/:id',
   authenticate,
   requireRole('farmer', 'admin'),
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     try {
       const existing = await queryOne<{ farmer_id: string }>(
@@ -251,7 +251,7 @@ router.patch(
 );
 
 // DELETE /products/:id
-router.delete('/:id', authenticate, requireRole('farmer', 'admin'), async (req: AuthRequest, res) => {
+router.delete('/:id', authenticate, requireRole('farmer', 'admin'), async (req: AuthRequest, res: Response) => {
   try {
     const existing = await queryOne<{ farmer_id: string; status: string }>(
       'SELECT farmer_id, status FROM products WHERE id = $1', [req.params.id]
@@ -270,7 +270,7 @@ router.delete('/:id', authenticate, requireRole('farmer', 'admin'), async (req: 
 });
 
 // POST /products/:id/like
-router.post('/:id/like', authenticate, async (req: AuthRequest, res) => {
+router.post('/:id/like', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const existing = await queryOne(
       'SELECT 1 FROM product_likes WHERE user_id = $1 AND product_id = $2',

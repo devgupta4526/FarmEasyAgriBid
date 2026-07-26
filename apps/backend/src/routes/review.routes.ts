@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { body } from 'express-validator';
 import { query, queryOne } from '../db/pool';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
@@ -8,11 +8,11 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // GET /reviews — reviews for a user or product
-router.get('/', async (req, res) => {
+router.get('/', async (req, res: Response) => {
   try {
-    const { user_id, product_id, page = 1, limit = 10 } = req.query as Record<string, string>;
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(50, parseInt(limit, 10));
+    const { user_id, product_id, page = '1', limit = '10' } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(String(page), 10));
+    const limitNum = Math.min(50, parseInt(String(limit), 10));
     const offset = (pageNum - 1) * limitNum;
 
     if (!user_id && !product_id) {
@@ -56,7 +56,7 @@ router.post(
     body('content').optional().trim().isLength({ max: 1000 }),
   ],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { reviewee_id, order_id, product_id, rating, title, content, photos } = req.body;
 
     try {

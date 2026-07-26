@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { body } from 'express-validator';
 import { query, queryOne, withTransaction } from '../db/pool';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middleware';
@@ -11,9 +11,9 @@ const router = Router();
 // GET /auctions — list live/scheduled auctions
 router.get('/', async (req, res) => {
   try {
-    const { status = 'live', page = 1, limit = 20 } = req.query as Record<string, string>;
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(50, parseInt(limit, 10));
+    const { status = 'live', page = '1', limit = '20' } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(String(page), 10));
+    const limitNum = Math.min(50, parseInt(String(limit), 10));
     const offset = (pageNum - 1) * limitNum;
 
     const validStatuses = ['scheduled', 'live', 'ended', 'cancelled', 'sold'];
@@ -96,7 +96,7 @@ router.post(
     body('bid_increment').optional().isFloat({ min: 1 }),
   ],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const {
       product_id, start_price, reserve_price, buy_now_price,
       bid_increment, starts_at, ends_at,
@@ -154,7 +154,7 @@ router.post(
   requireRole('buyer'),
   [body('amount').isFloat({ min: 0.01 })],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { amount } = req.body;
 
@@ -252,7 +252,7 @@ router.post(
   requireRole('buyer'),
   [body('max_amount').isFloat({ min: 0.01 })],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { max_amount } = req.body;
     try {
       await query(
@@ -274,7 +274,7 @@ router.post(
   '/:id/buy-now',
   authenticate,
   requireRole('buyer'),
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     try {
       return await withTransaction(async (client) => {

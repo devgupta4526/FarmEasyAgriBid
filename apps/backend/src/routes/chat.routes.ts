@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { body } from 'express-validator';
 import { query, queryOne, withTransaction } from '../db/pool';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
@@ -9,7 +9,7 @@ import { getIO } from '../socket/socket';
 const router = Router();
 
 // GET /chat/rooms
-router.get('/rooms', authenticate, async (req: AuthRequest, res) => {
+router.get('/rooms', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const rooms = await query(
       `SELECT cr.id, cr.last_message_at, cr.product_id, cr.order_id,
@@ -37,7 +37,7 @@ router.post(
   authenticate,
   [body('recipient_id').isUUID()],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { recipient_id, product_id, order_id } = req.body;
     const myId = req.user!.id;
 
@@ -70,7 +70,7 @@ router.post(
 );
 
 // GET /chat/rooms/:id/messages
-router.get('/rooms/:id/messages', authenticate, async (req: AuthRequest, res) => {
+router.get('/rooms/:id/messages', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     // Verify participant
     const room = await queryOne<{ participant_1: string; participant_2: string }>(
@@ -81,8 +81,8 @@ router.get('/rooms/:id/messages', authenticate, async (req: AuthRequest, res) =>
       return res.status(403).json({ error: 'Not a participant' });
     }
 
-    const { before, limit = 50 } = req.query as Record<string, string>;
-    const limitNum = Math.min(100, parseInt(limit, 10));
+    const { before, limit = '50' } = req.query as Record<string, string>;
+    const limitNum = Math.min(100, parseInt(String(limit), 10));
 
     const messages = await query(
       `SELECT cm.id, cm.content, cm.media_url, cm.media_type, cm.is_read, cm.created_at,
@@ -116,7 +116,7 @@ router.post(
   authenticate,
   [body('content').optional().trim().isLength({ max: 2000 })],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { content, media_url, media_type } = req.body;
 
     if (!content && !media_url) {
@@ -132,7 +132,7 @@ router.post(
         return res.status(403).json({ error: 'Not a participant' });
       }
 
-      const messages = await query(
+      const messages = await query<Record<string, unknown>>(
         `INSERT INTO chat_messages (room_id, sender_id, content, media_url, media_type)
          VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [req.params.id, req.user!.id, content || null, media_url || null, media_type || null]

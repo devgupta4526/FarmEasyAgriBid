@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import multer from 'multer';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { logger } from '../utils/logger';
@@ -24,7 +24,7 @@ const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SE
   : null;
 
 // POST /upload/image
-router.post('/image', authenticate, upload.single('file'), async (req: AuthRequest, res) => {
+router.post('/image', authenticate, upload.single('file'), async (req: AuthRequest, res: Response) => {
   if (!req.file) return res.status(422).json({ error: 'No file provided' });
   if (!supabase) return res.status(503).json({ error: 'Storage not configured' });
 
@@ -51,7 +51,7 @@ router.post('/image', authenticate, upload.single('file'), async (req: AuthReque
 });
 
 // POST /upload/document
-router.post('/document', authenticate, upload.single('file'), async (req: AuthRequest, res) => {
+router.post('/document', authenticate, upload.single('file'), async (req: AuthRequest, res: Response) => {
   if (!req.file) return res.status(422).json({ error: 'No file provided' });
   if (!supabase) return res.status(503).json({ error: 'Storage not configured' });
 

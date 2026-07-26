@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { body } from 'express-validator';
 import { query, queryOne } from '../db/pool';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middleware';
@@ -8,11 +8,11 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // GET /orders — list orders for current user
-router.get('/', authenticate, async (req: AuthRequest, res) => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query as Record<string, string>;
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(50, parseInt(limit, 10));
+    const { status, page = '1', limit = '20' } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(String(page), 10));
+    const limitNum = Math.min(50, parseInt(String(limit), 10));
     const offset = (pageNum - 1) * limitNum;
 
     const isAdmin = req.user!.role === 'admin';
@@ -63,7 +63,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 // GET /orders/:id
-router.get('/:id', authenticate, async (req: AuthRequest, res) => {
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const order = await queryOne(
       `SELECT o.*,
@@ -121,7 +121,7 @@ router.post(
     body('delivery_type').isIn(['pickup', 'delivery']),
   ],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { product_id, quantity, delivery_type, delivery_address, notes, coupon_code } = req.body;
 
     try {
@@ -169,7 +169,7 @@ router.patch(
   authenticate,
   [body('status').isIn(['confirmed', 'processing', 'picked_up', 'in_transit', 'delivered', 'cancelled'])],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { status, message, location_text } = req.body;
 

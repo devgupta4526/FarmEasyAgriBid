@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { query, queryOne } from '../db/pool';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middleware';
 import { logger } from '../utils/logger';
@@ -6,11 +6,11 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // GET /notifications
-router.get('/', authenticate, async (req: AuthRequest, res) => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { unread_only, page = 1, limit = 20 } = req.query as Record<string, string>;
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(50, parseInt(limit, 10));
+    const { unread_only, page = '1', limit = '20' } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(String(page), 10));
+    const limitNum = Math.min(50, parseInt(String(limit), 10));
     const offset = (pageNum - 1) * limitNum;
 
     const whereClause = unread_only === 'true'
@@ -42,7 +42,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 // PATCH /notifications/:id/read
-router.patch('/:id/read', authenticate, async (req: AuthRequest, res) => {
+router.patch('/:id/read', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     await query(
       'UPDATE notifications SET is_read = true, read_at = NOW() WHERE id = $1 AND user_id = $2',
@@ -56,7 +56,7 @@ router.patch('/:id/read', authenticate, async (req: AuthRequest, res) => {
 });
 
 // PATCH /notifications/read-all
-router.patch('/read-all', authenticate, async (req: AuthRequest, res) => {
+router.patch('/read-all', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     await query(
       'UPDATE notifications SET is_read = true, read_at = NOW() WHERE user_id = $1 AND is_read = false',

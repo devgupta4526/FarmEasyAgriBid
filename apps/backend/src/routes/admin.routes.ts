@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { query, queryOne } from '../db/pool';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middleware';
 import { logger } from '../utils/logger';
@@ -64,9 +64,9 @@ router.get('/dashboard', authenticate, requireRole('admin', 'super_admin'), asyn
 // GET /admin/users
 router.get('/users', authenticate, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const { role, status, search, page = 1, limit = 20 } = req.query as Record<string, string>;
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(100, parseInt(limit, 10));
+    const { role, status, search, page = '1', limit = '20' } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(String(page), 10));
+    const limitNum = Math.min(100, parseInt(String(limit), 10));
     const offset = (pageNum - 1) * limitNum;
 
     const conditions: string[] = [];
@@ -122,7 +122,7 @@ router.patch(
   '/users/:id/status',
   authenticate,
   requireRole('admin', 'super_admin'),
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { status, reason } = req.body;
     const validStatuses = ['active', 'suspended', 'banned', 'deactivated'];
 
@@ -205,8 +205,11 @@ router.patch(
 // GET /admin/audit-logs
 router.get('/audit-logs', authenticate, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query as Record<string, string>;
-    const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const pageStr = String(req.query.page || '1');
+    const limitStr = String(req.query.limit || '50');
+    const pageNum = parseInt(pageStr, 10);
+    const limitNum = parseInt(limitStr, 10);
+    const offset = (pageNum - 1) * limitNum;
 
     const logs = await query(
       `SELECT al.id, al.action, al.entity_type, al.entity_id, al.ip_address, al.created_at,
@@ -215,7 +218,7 @@ router.get('/audit-logs', authenticate, requireRole('admin', 'super_admin'), asy
        LEFT JOIN users u ON u.id = al.user_id
        ORDER BY al.created_at DESC
        LIMIT $1 OFFSET $2`,
-      [parseInt(limit, 10), offset]
+      [limitNum, offset]
     );
 
     return res.json({ logs });

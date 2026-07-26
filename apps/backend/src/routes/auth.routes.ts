@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { body } from 'express-validator';
@@ -42,13 +42,13 @@ function generateTokens(user: User) {
   const accessToken = jwt.sign(
     { sub: user.id, role: user.role, email: user.email, status: user.status },
     secret,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
   );
 
   const refreshToken = jwt.sign(
     { sub: user.id },
     refreshSecret,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d' }
+    { expiresIn: (process.env.REFRESH_TOKEN_EXPIRES_IN || '30d') as any }
   );
 
   return { accessToken, refreshToken };
@@ -66,7 +66,7 @@ router.post(
     body('role').isIn(['farmer', 'buyer', 'logistics']).withMessage('Invalid role'),
   ],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { email, phone, password, full_name, role, referral_code } = req.body;
 
     if (!email && !phone) {
@@ -159,7 +159,7 @@ router.post(
     body('password').notEmpty().withMessage('Password required'),
   ],
   validateRequest,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const { email, phone, password } = req.body;
 
     if (!email && !phone) {
@@ -312,7 +312,7 @@ router.post(
   authLimiter,
   [body('email').isEmail().normalizeEmail()],
   validateRequest,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const { email } = req.body;
     try {
       const user = await queryOne<{ id: string; full_name: string }>(
