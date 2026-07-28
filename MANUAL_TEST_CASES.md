@@ -35,6 +35,7 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 | **TC-08** | Real-Time Direct Messaging (Chat) | 4 | Buyer & Farmer |
 | **TC-09** | Admin Governance & KYC Portal | 5 | Admin |
 | **TC-10** | UI Aesthetics, Dark Mode & Localisation | 4 | All Users |
+| **TC-11** | Full Dashboard Sub-Pages Suite | 22 | Farmer / Buyer / Admin / Logistics |
 
 ---
 
@@ -61,13 +62,12 @@ This document contains a comprehensive, step-by-step manual test cases suite for
   3. Click **Sign In**.
 - **Expected Result**: Successfully logs in and redirects to `/dashboard/buyer`. Profile info displays in header.
 
-#### TC-01-03: Quick Demo Account One-Click Login
-- **Description**: Verify demo account shortcuts on login page.
+#### TC-01-03: Production Login View (Clean UI)
+- **Description**: Verify login page renders cleanly without demo accounts helper box.
 - **Pre-conditions**: Navigated to `/auth/login`.
 - **Steps**:
-  1. Click on **Farmer** demo account button (or prefill details).
-  2. Click **Sign In**.
-- **Expected Result**: Logged in as Farmer with demo credentials automatically.
+  1. Inspect `/auth/login`.
+- **Expected Result**: Form renders cleanly with Email and Password inputs and Sign In button.
 
 #### TC-01-04: Forgot Password Link & Email Dispatch
 - **Description**: Verify forgot password workflow.
@@ -262,8 +262,8 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 - **Description**: Verify digital wallet details.
 - **Pre-conditions**: Logged in as Buyer or Farmer.
 - **Steps**:
-  1. Navigate to Dashboard Wallet section.
-- **Expected Result**: Current wallet balance, pending escrow funds, and history of deposits/withdrawals display clearly.
+  1. Navigate to Dashboard Wallet section (`/dashboard/buyer/wallet`).
+- **Expected Result**: Current wallet balance, pending escrow funds, and history of deposits/withdrawals display clearly via `walletApi`.
 
 #### TC-05-02: Direct Checkout & Order Creation
 - **Description**: Place order directly from product page.
@@ -273,13 +273,13 @@ This document contains a comprehensive, step-by-step manual test cases suite for
   2. Click **Buy Now**.
   3. Specify delivery address and quantity.
   4. Confirm order.
-- **Expected Result**: Order is created in `orders` table with status `pending`, funds locked in escrow, and order appears in `/dashboard/buyer`.
+- **Expected Result**: Order is created in `orders` table with status `pending`, funds locked in escrow, and order appears in `/dashboard/buyer/orders`.
 
 #### TC-05-03: Order Status Progression
 - **Description**: Update order through complete lifecycle.
 - **Pre-conditions**: Active order created.
 - **Steps**:
-  1. Farmer changes status to `Confirmed`.
+  1. Farmer changes status to `Confirmed` on `/dashboard/farmer/orders`.
   2. Logistics partner changes status to `In-Transit`.
   3. Mark as `Delivered`.
 - **Expected Result**: Order tracking timeline updates visually with timestamps at each phase.
@@ -356,8 +356,8 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 - **Description**: Access logistics delivery management console.
 - **Pre-conditions**: Logged in as Logistics Driver (`logistics@agribid.com`).
 - **Steps**:
-  1. Navigate to `/dashboard/logistics`.
-- **Expected Result**: Displays assigned deliveries, pickup coordinates, destination addresses, and status controls.
+  1. Navigate to `/dashboard/logistics/deliveries`.
+- **Expected Result**: Displays assigned deliveries via `logisticsApi.deliveries`, pickup coordinates, destination addresses, and status controls.
 
 #### TC-07-02: Update Transit Status
 - **Description**: Change delivery status from Pickup to In-Transit.
@@ -390,14 +390,14 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 - **Steps**:
   1. Open product page `/marketplace/[id]`.
   2. Click **Contact Seller**.
-- **Expected Result**: Redirects to Chat room, creating or loading room in `chat_rooms` table.
+- **Expected Result**: Redirects to Chat room `/dashboard/chat`, creating or loading room in `chat_rooms` table.
 
 #### TC-08-02: Real-time Message Exchange
 - **Description**: Send and receive messages instantly via WebSockets.
 - **Pre-conditions**: Two browser sessions open (Buyer and Farmer in same chat room).
 - **Steps**:
   1. Buyer types `Is the price negotiable for bulk purchase?` and clicks Send.
-- **Expected Result**: Message appears immediately in Farmer's chat window without page refresh via Socket.IO `new_message` event.
+- **Expected Result**: Message appears immediately in Farmer's chat window without page refresh via Socket.IO `new_message` event and `chatApi.sendMessage`.
 
 #### TC-08-03: Typing Indicator Broadcast
 - **Description**: Show live typing indicator when user is typing.
@@ -411,7 +411,7 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 - **Pre-conditions**: Prior chat messages exist in room.
 - **Steps**:
   1. Refresh page or navigate back to chat room.
-- **Expected Result**: API fetches previous chat messages ordered chronologically by timestamp.
+- **Expected Result**: API fetches previous chat messages ordered chronologically by timestamp via `chatApi.getMessages`.
 
 ---
 
@@ -453,8 +453,8 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 - **Description**: Track administrator actions for security audit.
 - **Pre-conditions**: Admin actions performed.
 - **Steps**:
-  1. Open Audit Logs section in Admin panel.
-- **Expected Result**: Chronological log of admin actions (KYC approvals, user status changes) displays with timestamp and admin ID.
+  1. Open Audit Logs section in Admin panel (`/dashboard/admin/audit-logs`).
+- **Expected Result**: Chronological log of admin actions (KYC approvals, user status changes) displays with timestamp and admin ID via `adminApi.auditLogs`.
 
 ---
 
@@ -480,9 +480,9 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 - **Pre-conditions**: Logged in user.
 - **Steps**:
   1. Trigger an action (e.g., place bid or receive message).
-  2. View bell icon in header.
+  2. Open `/dashboard/notifications`.
   3. Click **Mark All as Read**.
-- **Expected Result**: Red notification badge counter updates, dropdown displays notification list, and unread indicator clears.
+- **Expected Result**: Red notification badge counter updates, notification list renders via `notificationApi.list`, and `notificationApi.markAllRead` executes.
 
 #### TC-10-04: Graceful Network & API Error Handling
 - **Description**: Verify fallback UI when backend API is unreachable.
@@ -493,8 +493,181 @@ This document contains a comprehensive, step-by-step manual test cases suite for
 
 ---
 
+### Module 11: Full Dashboard Sub-Pages Suite (TC-11)
+
+#### TC-11-01: Common Messaging Dashboard (`/dashboard/chat`)
+- **Description**: Verify conversation room selection, message list fetching, and message sending.
+- **Pre-conditions**: Logged in user.
+- **Steps**:
+  1. Open `/dashboard/chat`.
+  2. Click a room in the conversations sidebar.
+  3. Type message and click Send button.
+- **Expected Result**: Room messages display chronologically and new message appends cleanly to chat view.
+
+#### TC-11-02: Notification Center (`/dashboard/notifications`)
+- **Description**: Verify notification listing and mark as read functions.
+- **Pre-conditions**: Logged in user.
+- **Steps**:
+  1. Open `/dashboard/notifications`.
+  2. Click an unread notification card.
+  3. Click **Mark All as Read**.
+- **Expected Result**: Single notification turns read, and all unread badges clear.
+
+#### TC-11-03: User Account & Security Settings (`/dashboard/settings`)
+- **Description**: Verify updating personal info and changing password.
+- **Pre-conditions**: Logged in user.
+- **Steps**:
+  1. Open `/dashboard/settings`.
+  2. Update Full Name or Phone Number and click Save.
+  3. Enter Current Password and New Password and submit.
+- **Expected Result**: Profile updates successfully and password update toast feedback displays.
+
+#### TC-11-04: Farmer Auctions Listing (`/dashboard/farmer/auctions`)
+- **Description**: Verify farmer's auction management dashboard.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/auctions`.
+- **Expected Result**: Active auctions count, total bids count, and listing cards display cleanly with "View Bids" link.
+
+#### TC-11-05: Farmer Customer Orders (`/dashboard/farmer/orders`)
+- **Description**: Verify order fulfillment and status updates.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/orders`.
+  2. Click **Confirm Order** on a pending order.
+- **Expected Result**: Order status updates to `confirmed` and timeline badge updates.
+
+#### TC-11-06: Farmer Stock Inventory (`/dashboard/farmer/inventory`)
+- **Description**: Verify crop stock tracking and alert badges.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/inventory`.
+- **Expected Result**: Stock table renders with available quantities, unit measurements, and low-stock alert indicators.
+
+#### TC-11-07: Farmer Sales Analytics (`/dashboard/farmer/analytics`)
+- **Description**: Verify gross revenue and sales bar charts.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/analytics`.
+- **Expected Result**: Gross revenue card, total sales counter, and monthly sales bar chart display cleanly.
+
+#### TC-11-08: Farmer Earnings & Payout Requests (`/dashboard/farmer/earnings`)
+- **Description**: Verify balance cards and payout withdrawal request.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/earnings`.
+  2. Click **Request Payout**.
+- **Expected Result**: Available balance, locked escrow balance, and transaction history table render cleanly.
+
+#### TC-11-09: Farmer AI Advisory Portal (`/dashboard/farmer/ai`)
+- **Description**: Verify navigation cards for AI services.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/ai`.
+  2. Click **Launch Price Advisor**.
+- **Expected Result**: Navigates cleanly to `/ai` hub page with price advisor options.
+
+#### TC-11-10: Farmer Product Reviews (`/dashboard/farmer/reviews`)
+- **Description**: Verify customer rating scores and feedback list.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/reviews`.
+- **Expected Result**: Average rating score (out of 5.0), total reviews count, and buyer comments display via `reviewApi`.
+
+#### TC-11-11: Farmer KYC & Land Documents (`/dashboard/farmer/documents`)
+- **Description**: Verify identity document list and status badges.
+- **Pre-conditions**: Logged in as Farmer.
+- **Steps**:
+  1. Open `/dashboard/farmer/documents`.
+- **Expected Result**: Document records display with verification status badges (`verified`, `pending`).
+
+#### TC-11-12: Buyer Orders History (`/dashboard/buyer/orders`)
+- **Description**: Verify buyer purchases and live map link.
+- **Pre-conditions**: Logged in as Buyer.
+- **Steps**:
+  1. Open `/dashboard/buyer/orders`.
+  2. Click **Track Live Map**.
+- **Expected Result**: Order list displays with price, seller name, status badge, and redirects to `/map`.
+
+#### TC-11-13: Buyer Auction Bids (`/dashboard/buyer/bids`)
+- **Description**: Verify auction bid status and outbid warnings.
+- **Pre-conditions**: Logged in as Buyer.
+- **Steps**:
+  1. Open `/dashboard/buyer/bids`.
+- **Expected Result**: Active bids display with `winning` or `outbid` badges and highest bid amounts.
+
+#### TC-11-14: Buyer Wishlist (`/dashboard/buyer/wishlist`)
+- **Description**: Verify wishlist listing and item deletion.
+- **Pre-conditions**: Logged in as Buyer.
+- **Steps**:
+  1. Open `/dashboard/buyer/wishlist`.
+  2. Click Trash icon on an item.
+- **Expected Result**: Item removes cleanly from wishlist view.
+
+#### TC-11-15: Buyer Digital Wallet (`/dashboard/buyer/wallet`)
+- **Description**: Verify cash balance, locked escrow hold, and transaction logs.
+- **Pre-conditions**: Logged in as Buyer.
+- **Steps**:
+  1. Open `/dashboard/buyer/wallet`.
+  2. Click **Add Funds**.
+- **Expected Result**: Real wallet balances display via `walletApi.get` and transaction list via `walletApi.transactions`.
+
+#### TC-11-16: Buyer Procurement Analytics (`/dashboard/buyer/analytics`)
+- **Description**: View total spend and auction savings percentage.
+- **Pre-conditions**: Logged in as Buyer.
+- **Steps**:
+  1. Open `/dashboard/buyer/analytics`.
+- **Expected Result**: Spend metrics and auction savings cards display cleanly.
+
+#### TC-11-17: Buyer AI Intelligence Hub (`/dashboard/buyer/ai`)
+- **Description**: Access buyer price valuation tools.
+- **Pre-conditions**: Logged in as Buyer.
+- **Steps**:
+  1. Open `/dashboard/buyer/ai`.
+- **Expected Result**: Renders price fair valuation and crop supply forecast launch cards.
+
+#### TC-11-18: Admin Product Moderation (`/dashboard/admin/products`)
+- **Description**: Approve or flag seller product listings.
+- **Pre-conditions**: Logged in as Admin.
+- **Steps**:
+  1. Open `/dashboard/admin/products`.
+  2. Click **Approve** on a pending product.
+- **Expected Result**: Product status updates to approved.
+
+#### TC-11-19: Admin Orders & Revenue (`/dashboard/admin/orders` & `/dashboard/admin/revenue`)
+- **Description**: View platform orders and net 2.5% commission fee.
+- **Pre-conditions**: Logged in as Admin.
+- **Steps**:
+  1. Open `/dashboard/admin/revenue`.
+- **Expected Result**: Net commission collected and platform fee rate display.
+
+#### TC-11-20: Admin Auction Governance (`/dashboard/admin/auctions`)
+- **Description**: Monitor live auctions and pause active room.
+- **Pre-conditions**: Logged in as Admin.
+- **Steps**:
+  1. Open `/dashboard/admin/auctions`.
+  2. Click **Pause Auction**.
+- **Expected Result**: Emergency pause action triggers.
+
+#### TC-11-21: Admin Announcements (`/dashboard/admin/announcements`)
+- **Description**: Broadcast announcement to platform users.
+- **Pre-conditions**: Logged in as Admin.
+- **Steps**:
+  1. Open `/dashboard/admin/announcements`.
+  2. Enter Title and Message and click Broadcast.
+- **Expected Result**: Announcement adds to active list and toast confirms broadcast.
+
+#### TC-11-22: Admin Security Audit Logs (`/dashboard/admin/audit-logs`)
+- **Description**: Inspect security audit trail.
+- **Pre-conditions**: Logged in as Admin.
+- **Steps**:
+  1. Open `/dashboard/admin/audit-logs`.
+- **Expected Result**: Chronological security audit logs display via `adminApi.auditLogs`.
+
+---
+
 ## Conclusion & Verification Checklist
 
-- [x] All 10 core modules documented with step-by-step test instructions.
-- [x] Pre-conditions, test steps, and exact expected outcomes specified for every test case.
+- [x] All 11 core modules documented with step-by-step test instructions.
+- [x] Pre-conditions, test steps, and exact expected outcomes specified for all 74 test cases.
 - [x] Functional coverage spans Frontend (Next.js), Backend (Express), WebSockets (Socket.IO), Database (PostgreSQL/Supabase), and AI (Google Gemini).

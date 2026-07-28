@@ -173,3 +173,33 @@ export const adminApi = {
     api.patch(`/admin/kyc/${userId}`, { decision, reason }, token),
   auditLogs: (token: string) => api.get('/admin/audit-logs', token),
 };
+
+// Wallet
+export const walletApi = {
+  get: (token: string) => api.get('/wallet', token),
+  transactions: (params: Record<string, string>, token: string) => {
+    const qs = new URLSearchParams(params).toString();
+    return api.get(`/wallet/transactions?${qs}`, token);
+  },
+};
+
+// Logistics
+export const logisticsApi = {
+  deliveries: (params: Record<string, string>, token: string) => {
+    const qs = new URLSearchParams(params).toString();
+    return api.get(`/logistics/deliveries?${qs}`, token);
+  },
+  updateLocation: (id: string, latitude: number, longitude: number, token: string) =>
+    api.patch(`/logistics/deliveries/${id}/location`, { latitude, longitude }, token),
+  updateStatus: (id: string, status: string, notes?: string, token?: string) =>
+    api.patch(`/logistics/deliveries/${id}/status`, { status, notes }, token),
+};
+
+// Reviews
+export const reviewApi = {
+  list: (params: Record<string, string>) => {
+    const qs = new URLSearchParams(params).toString();
+    return api.get(`/reviews?${qs}`);
+  },
+  create: (data: unknown, token: string) => api.post('/reviews', data, token),
+};

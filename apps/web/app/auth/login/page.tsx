@@ -126,13 +126,6 @@ export default function LoginPage() {
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
-
-            <div className="mt-6 p-4 rounded-xl bg-muted/50 text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Demo accounts:</p>
-              <p>Farmer: farmer@agribid.com / Farmer@1234</p>
-              <p>Buyer: buyer@agribid.com / Buyer@1234</p>
-              <p>Admin: admin@agribid.com / Admin@1234</p>
-            </div>
           </CardContent>
         </Card>
       </motion.div>
