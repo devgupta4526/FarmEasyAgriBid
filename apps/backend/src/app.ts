@@ -32,15 +32,26 @@ export function createApp(): Application {
   }));
 
   // CORS
-  const allowedOrigins = [
-    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  const configuredOrigins = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.FRONTEND_URL,
+    process.env.CORS_ORIGIN,
     'https://agribid.vercel.app',
-  ].filter(Boolean);
+    'https://farm-easy-agri-bid-web.vercel.app',
+  ].filter((url): url is string => Boolean(url));
+
+  const isOriginAllowed = (origin: string): boolean => {
+    if (configuredOrigins.includes(origin)) return true;
+    if (/\.vercel\.app$/.test(origin)) return true;
+    if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
+    if (/^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) return true;
+    return false;
+  };
 
   app.use(cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error('Not allowed by CORS'));
+      if (!origin || isOriginAllowed(origin)) return cb(null, true);
+      cb(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

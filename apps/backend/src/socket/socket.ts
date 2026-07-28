@@ -6,12 +6,28 @@ import { logger } from '../utils/logger';
 let io: Server | null = null;
 
 export function initSocket(httpServer: HttpServer): Server {
+  const configuredOrigins = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.FRONTEND_URL,
+    process.env.CORS_ORIGIN,
+    'https://agribid.vercel.app',
+    'https://farm-easy-agri-bid-web.vercel.app',
+  ].filter((url): url is string => Boolean(url));
+
+  const isOriginAllowed = (origin: string): boolean => {
+    if (configuredOrigins.includes(origin)) return true;
+    if (/\.vercel\.app$/.test(origin)) return true;
+    if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
+    if (/^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) return true;
+    return false;
+  };
+
   io = new Server(httpServer, {
     cors: {
-      origin: [
-        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        'https://agribid.vercel.app',
-      ],
+      origin: (origin, callback) => {
+        if (!origin || isOriginAllowed(origin)) return callback(null, true);
+        callback(new Error(`Socket CORS disallowed: ${origin}`));
+      },
       credentials: true,
     },
     transports: ['websocket', 'polling'],
