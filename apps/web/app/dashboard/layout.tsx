@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -88,9 +88,27 @@ function getNav(role: string): NavItem[] {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuthStore();
+  const { user, accessToken, isAuthenticated, logout } = useAuthStore();
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    if (!isAuthenticated || !accessToken) {
+      router.push('/auth/login');
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [isAuthenticated, accessToken, router]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center text-muted-foreground">Authenticating session...</div>
+      </div>
+    );
+  }
 
   const navItems = getNav(user?.role ?? 'buyer');
 

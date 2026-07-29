@@ -373,4 +373,42 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// PATCH /auth/password
+router.patch(
+  '/password',
+  authenticate,
+  [
+    body('current_password').notEmpty().withMessage('Current password required'),
+    body('new_password').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+  ],
+  validateRequest,
+  async (req: AuthRequest, res: Response) => {
+    const { current_password, new_password } = req.body;
+    try {
+      const user = await queryOne<{ password_hash: string }>(
+        'SELECT password_hash FROM users WHERE id = $1',
+        [req.user!.id]
+      );
+      if (!user || !user.password_hash) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const valid = await bcrypt.compare(current_password, user.password_hash);
+      if (!valid) {
+        return res.status(400).json({ error: 'Incorrect current password' });
+      }
+
+      const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+      const newHash = await bcrypt.hash(new_password, rounds);
+
+      await query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, req.user!.id]);
+
+      return res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+      logger.error('Update password error', { error: (err as Error).message });
+      return res.status(500).json({ error: 'Failed to update password' });
+    }
+  }
+);
+
 export default router;

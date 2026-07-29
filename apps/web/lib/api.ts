@@ -81,6 +81,14 @@ export const authApi = {
     api.get('/auth/me', token),
   forgotPassword: (email: string) =>
     api.post('/auth/forgot-password', { email }),
+  updatePassword: (data: { current_password: string; new_password: string }, token: string) =>
+    api.patch('/auth/password', data, token),
+};
+
+// User API
+export const userApi = {
+  updateProfile: (data: { full_name?: string; phone?: string; display_name?: string; avatar_url?: string }, token: string) =>
+    api.patch('/users/me', data, token),
 };
 
 // Product API
@@ -172,6 +180,8 @@ export const adminApi = {
   reviewKyc: (userId: string, decision: string, reason: string | undefined, token: string) =>
     api.patch(`/admin/kyc/${userId}`, { decision, reason }, token),
   auditLogs: (token: string) => api.get('/admin/audit-logs', token),
+  createAnnouncement: (data: { title: string; content: string; target_roles?: string }, token: string) =>
+    api.post('/admin/announcements', data, token),
 };
 
 // Wallet

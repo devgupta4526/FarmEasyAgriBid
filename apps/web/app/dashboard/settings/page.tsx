@@ -1,43 +1,101 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/hooks/use-toast';
+import { userApi, authApi } from '@/lib/api';
 import { Settings, User, Lock, Bell, Shield, Check } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
+  const { user, accessToken, updateUser, setUser } = useAuthStore();
   const { toast } = useToast();
 
-  const [fullName, setFullName] = useState(user?.full_name || '');
-  const [email] = useState(user?.email || '');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
 
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
-  const handleProfileSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (accessToken && !user) {
+      authApi.me(accessToken)
+        .then((res: any) => {
+          if (res?.user) {
+            setUser(res.user);
+            setFullName(res.user.full_name || '');
+            setEmail(res.user.email || '');
+            setPhone(res.user.phone || '');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [accessToken, user, setUser]);
+
+  const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    if (!accessToken) {
+      toast({ title: 'Authentication required', variant: 'destructive' });
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      await userApi.updateProfile({ full_name: fullName, phone }, accessToken);
+      updateUser({ full_name: fullName, phone });
       toast({ title: 'Profile updated successfully' });
-    }, 600);
+    } catch (err) {
+      toast({
+        title: 'Profile Update Failed',
+        description: (err as Error).message || 'Could not update profile details.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
-  const handlePasswordSave = (e: React.FormEvent) => {
+  const handlePasswordSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPass) return;
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    if (!currentPass || !newPass) {
+      toast({ title: 'Please enter both current and new password', variant: 'destructive' });
+      return;
+    }
+    if (!accessToken) {
+      toast({ title: 'Authentication required', variant: 'destructive' });
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      await authApi.updatePassword(
+        { current_password: currentPass, new_password: newPass },
+        accessToken
+      );
       setCurrentPass('');
       setNewPass('');
       toast({ title: 'Password changed successfully' });
-    }, 600);
+    } catch (err) {
+      toast({
+        title: 'Password Update Failed',
+        description: (err as Error).message || 'Failed to change password.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -88,6 +146,7 @@ export default function SettingsPage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="w-full h-10 px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </div>
                 <div>
@@ -105,12 +164,12 @@ export default function SettingsPage() {
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 (555) 000-0000"
+                    placeholder="+91 9876543210"
                     className="w-full h-10 px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
-                <Button type="submit" className="bg-agri-600 hover:bg-agri-700" disabled={saving}>
-                  <Check className="h-4 w-4 mr-2" /> Save Profile
+                <Button type="submit" className="bg-agri-600 hover:bg-agri-700" disabled={savingProfile}>
+                  <Check className="h-4 w-4 mr-2" /> {savingProfile ? 'Saving...' : 'Save Profile'}
                 </Button>
               </form>
             </CardContent>
@@ -132,6 +191,7 @@ export default function SettingsPage() {
                     onChange={(e) => setCurrentPass(e.target.value)}
                     placeholder="••••••••"
                     className="w-full h-10 px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </div>
                 <div>
@@ -142,10 +202,11 @@ export default function SettingsPage() {
                     onChange={(e) => setNewPass(e.target.value)}
                     placeholder="••••••••"
                     className="w-full h-10 px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    required
                   />
                 </div>
-                <Button type="submit" variant="outline" disabled={saving}>
-                  Update Password
+                <Button type="submit" variant="outline" disabled={savingPassword}>
+                  {savingPassword ? 'Updating...' : 'Update Password'}
                 </Button>
               </form>
             </CardContent>

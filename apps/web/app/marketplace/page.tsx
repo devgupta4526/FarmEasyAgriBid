@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { productApi, categoryApi } from '@/lib/api';
+import { productApi, categoryApi, wishlistApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Search, Filter, Heart, Zap, TrendingUp, MapPin, Leaf, Star } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
@@ -60,7 +60,20 @@ function ProductCard({ product }: { product: Product }) {
       toast({ title: 'Login required', description: 'Please login to save products.', variant: 'destructive' });
       return;
     }
-    setLiked(!liked);
+
+    try {
+      if (liked) {
+        await wishlistApi.remove(product.id, accessToken);
+        setLiked(false);
+        toast({ title: 'Removed from wishlist' });
+      } else {
+        await wishlistApi.add(product.id, accessToken);
+        setLiked(true);
+        toast({ title: 'Added to wishlist' });
+      }
+    } catch (err) {
+      toast({ title: 'Wishlist update failed', description: (err as Error).message, variant: 'destructive' });
+    }
   };
 
   const price = product.listing_type === 'auction' && product.current_bid

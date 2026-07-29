@@ -15,6 +15,8 @@ import {
   Package, Plus, BarChart3, Upload, TrendingUp, Eye, Edit, Trash2, ArrowUpRight, Filter
 } from 'lucide-react';
 
+import { useToast } from '@/hooks/use-toast';
+
 interface Product {
   id: string;
   title: string;
@@ -43,6 +45,7 @@ const statusColors: Record<string, string> = {
 
 export default function FarmerProductsPage() {
   const { accessToken, user } = useAuthStore();
+  const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState('');
 
   const { data, isLoading, refetch } = useQuery({
@@ -53,6 +56,17 @@ export default function FarmerProductsPage() {
     ) as Promise<{ products: Product[] }>,
     enabled: !!accessToken,
   });
+
+  const handleArchive = async (productId: string) => {
+    if (!accessToken) return;
+    try {
+      await productApi.delete(productId, accessToken);
+      toast({ title: 'Product Archived' });
+      refetch();
+    } catch (err) {
+      toast({ title: 'Archive Failed', description: (err as Error).message, variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -153,7 +167,7 @@ export default function FarmerProductsPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <Link href={`/dashboard/farmer/products/${product.id}/edit`} className="flex-1">
                       <Button size="sm" variant="outline" className="w-full gap-1 h-8 text-xs">
                         <Edit className="h-3 w-3" /> Edit
@@ -164,6 +178,15 @@ export default function FarmerProductsPage() {
                         <ArrowUpRight className="h-3 w-3" /> View
                       </Button>
                     </Link>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs text-destructive hover:bg-destructive/10 px-2"
+                      title="Archive Product"
+                      onClick={() => handleArchive(product.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
