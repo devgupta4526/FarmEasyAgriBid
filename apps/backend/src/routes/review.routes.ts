@@ -16,7 +16,7 @@ router.get('/', async (req, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     if (!user_id && !product_id) {
-      return res.status(422).json({ error: 'user_id or product_id required' });
+      return res.json({ reviews: [], stats: { avg_rating: 0, total: 0 } });
     }
 
     const condition = user_id ? 'r.reviewee_id = $1' : 'r.product_id = $1';

@@ -88,6 +88,15 @@ async function seedUsers() {
       `, [buyerResult.rows[0].id]);
     }
 
+    const logisticsHash = await bcrypt.hash('Logistics@1234', 12);
+
+    // Demo Logistics
+    await client.query(`
+      INSERT INTO users (email, password_hash, role, status, full_name, email_verified)
+      VALUES ('logistics@agribid.com', $1, 'logistics', 'active', 'AgriExpress Logistics', true)
+      ON CONFLICT (email) DO NOTHING
+    `, [logisticsHash]);
+
     console.log('✓ Seeded users');
   } finally {
     client.release();

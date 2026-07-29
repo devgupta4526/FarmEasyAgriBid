@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { reviewApi } from '@/lib/api';
+import { useAuthStore } from '@/store/auth.store';
 import { Star, ThumbsUp, User, MessageSquare } from 'lucide-react';
 
 interface ReviewItem {
@@ -15,17 +16,19 @@ interface ReviewItem {
 }
 
 export default function FarmerReviewsPage() {
+  const { user } = useAuthStore();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchReviews();
-  }, []);
+  }, [user?.id]);
 
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      const res = await reviewApi.list({}) as { reviews?: ReviewItem[] };
+      const params: Record<string, string> = user?.id ? { user_id: user.id } : {};
+      const res = await reviewApi.list(params) as { reviews?: ReviewItem[] };
       setReviews(res.reviews || []);
     } catch {
       setReviews([]);

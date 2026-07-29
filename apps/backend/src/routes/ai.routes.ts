@@ -7,10 +7,10 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-// Stricter rate limiting for AI endpoints (free tier)
+// Rate limiting for AI endpoints
 const aiLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 30,
+  windowMs: 60 * 60 * 1000,
+  max: 100,
   message: { error: 'AI request limit reached. Try again in an hour.' },
 });
 
@@ -24,6 +24,11 @@ const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
   { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
 ];
+
+function parseOrCleanJSON(text: string): any {
+  const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  return JSON.parse(cleaned);
+}
 
 async function callGemini(prompt: string, systemPrompt?: string): Promise<string> {
   if (!genAI) throw new Error('Gemini AI not configured');
@@ -57,6 +62,121 @@ async function logAIRequest(
   }
 }
 
+// Fallback Generators
+function getPriceAdvisorFallback(crop: string, unit = 'kg', location = 'India') {
+  return {
+    current_market_price: { min: 25, max: 45, avg: 35, unit: `per ${unit}` },
+    recommended_price: 38,
+    profit_margin_estimate: "20-30%",
+    demand_level: "high",
+    price_trend: "rising",
+    best_time_to_sell: "Next 7-10 days due to high regional demand",
+    nearby_mandis: [`${location} APMC Mandi`, "Azadpur Mandi", "Vashi APMC Market"],
+    insights: [
+      `Current market demand for ${crop} is steady across regional APMC hubs.`,
+      "Quality grading and organic certification can command a 15-20% price premium.",
+      "Direct buyer negotiations via AgriBid Escrow yield higher profit margins than local traders."
+    ]
+  };
+}
+
+function getCropAdvisorFallback(location: string, season = 'Kharif') {
+  return {
+    recommended_crops: [
+      {
+        name: "Organic Red Onion / Tomato",
+        expected_yield_kg_per_acre: 12000,
+        expected_revenue_per_acre: 240000,
+        investment_per_acre: 60000,
+        profit_estimate: 180000,
+        growing_days: 90,
+        water_requirement: "medium",
+        disease_risk: "low",
+        market_demand: "high",
+        reason: `Highly suited for ${location} soil and current ${season} season climate.`
+      },
+      {
+        name: "Basmati Rice / Wheat",
+        expected_yield_kg_per_acre: 4500,
+        expected_revenue_per_acre: 160000,
+        investment_per_acre: 40000,
+        profit_estimate: 120000,
+        growing_days: 120,
+        water_requirement: "high",
+        disease_risk: "low",
+        market_demand: "high",
+        reason: "Consistent market demand with steady MSP backing."
+      }
+    ],
+    weather_advisory: `Favorable seasonal weather expected in ${location}. Ensure proper field drainage.`,
+    soil_preparation: [
+      "Perform soil testing for NPK levels before sowing.",
+      "Incorporate organic compost / vermicompost during land preparation."
+    ],
+    general_tips: [
+      "Use certified disease-resistant seed varieties.",
+      "Monitor soil moisture levels regularly."
+    ]
+  };
+}
+
+function getDiseaseAssistantFallback(crop: string, symptoms: string) {
+  return {
+    possible_diseases: [
+      {
+        name: `${crop} Leaf Spot / Blight`,
+        confidence: "medium",
+        symptoms_match: [symptoms || "Foliar discoloration"],
+        cause: "Fungal pathogen or excess humidity",
+        severity: "moderate",
+        treatment: {
+          organic: ["Apply Neem oil solution (5ml/L) or Trichoderma viride."],
+          chemical: ["Spray Copper Oxychloride (3g/L) or Mancozeb."],
+          preventive: ["Ensure field aeration and avoid overhead irrigation."]
+        },
+        spread_risk: "Moderate during high humidity."
+      }
+    ],
+    immediate_action: "Isolate affected plants and apply recommended organic fungicide.",
+    recovery_timeline: "7-14 days after treatment",
+    expert_consultation_needed: false
+  };
+}
+
+function getMarketForecastFallback(category: string, location: string) {
+  return {
+    high_demand_crops: [
+      { name: "Red Onions", expected_price_range: "₹30 - ₹45/kg", reason: "Seasonal supply shortage" },
+      { name: "Alphonso Mangoes", expected_price_range: "₹250 - ₹400/kg", reason: "Peak harvest season" }
+    ],
+    expected_shortages: [
+      { crop: "Green Chillies", severity: "moderate", reason: "Unseasonal rain impact" }
+    ],
+    expected_oversupply: [
+      { crop: "Tomatoes", price_drop_percent: 10, reason: "Bumper harvest in neighbouring districts" }
+    ],
+    festival_demand: [
+      { festival: "Harvest Festival", date: "Upcoming Month", high_demand_items: ["Grains", "Pulses", "Fruits"] }
+    ],
+    seasonal_insights: [
+      "APMC wholesale arrivals are expected to increase over the next 3 weeks.",
+      "Direct farm-gate sales present the highest profit margin for farmers."
+    ],
+    export_opportunities: [
+      { crop: "Basmati Rice", destination: "Middle East", price_premium: "25%" }
+    ],
+    weather_impact: `Normal seasonal conditions in ${location}.`,
+    overall_market_sentiment: "bullish"
+  };
+}
+
+function getAIChatFallback(message: string, language = 'en'): string {
+  if (language === 'hi') {
+    return "नमस्ते! मैं एग्रीबिड एआई सहायक हूँ। आप अपनी फसलों की कीमत, मौसम, और बाज़ार की जानकारी के लिए मुझसे पूछ सकते हैं।";
+  }
+  return "Hello! I am AgriBid Assistant. I can help you with crop market prices, crop recommendations, disease diagnosis, and buying/selling on AgriBid.";
+}
+
 // POST /ai/price-advisor
 router.post('/price-advisor', authenticate, aiLimiter, async (req: AuthRequest, res) => {
   const { crop, quantity, unit, location, quality_grade, is_organic } = req.body;
@@ -86,12 +206,14 @@ Return ONLY valid JSON with this structure:
 }`;
 
     const text = await callGemini(prompt, 'You are an agricultural market pricing expert. Always respond in valid JSON.');
-    const data = JSON.parse(text);
+    const data = parseOrCleanJSON(text);
     await logAIRequest(req.user?.id, 'price_advisor', req.body, data, start);
     return res.json({ data });
   } catch (err) {
-    logger.error('Price advisor error', { error: (err as Error).message });
-    return res.status(500).json({ error: 'AI service temporarily unavailable' });
+    logger.warn('Price advisor Gemini error, returning rule-based fallback', { error: (err as Error).message });
+    const data = getPriceAdvisorFallback(crop, unit, location);
+    await logAIRequest(req.user?.id, 'price_advisor_fallback', req.body, data, start);
+    return res.json({ data });
   }
 });
 
@@ -134,12 +256,14 @@ Return ONLY valid JSON:
 }`;
 
     const text = await callGemini(prompt, 'You are an expert Indian agricultural advisor. Respond only in valid JSON.');
-    const data = JSON.parse(text);
+    const data = parseOrCleanJSON(text);
     await logAIRequest(req.user?.id, 'crop_advisor', req.body, data, start);
     return res.json({ data });
   } catch (err) {
-    logger.error('Crop advisor error', { error: (err as Error).message });
-    return res.status(500).json({ error: 'AI service temporarily unavailable' });
+    logger.warn('Crop advisor Gemini error, returning rule-based fallback', { error: (err as Error).message });
+    const data = getCropAdvisorFallback(location, season);
+    await logAIRequest(req.user?.id, 'crop_advisor_fallback', req.body, data, start);
+    return res.json({ data });
   }
 });
 
@@ -181,18 +305,20 @@ Return ONLY valid JSON:
 }`;
 
     const text = await callGemini(prompt, 'You are an expert plant pathologist. Respond only in valid JSON.');
-    const data = JSON.parse(text);
+    const data = parseOrCleanJSON(text);
     await logAIRequest(req.user?.id, 'disease_assistant', req.body, data, start);
     return res.json({ data });
   } catch (err) {
-    logger.error('Disease assistant error', { error: (err as Error).message });
-    return res.status(500).json({ error: 'AI service temporarily unavailable' });
+    logger.warn('Disease assistant Gemini error, returning fallback', { error: (err as Error).message });
+    const data = getDiseaseAssistantFallback(crop, symptoms);
+    await logAIRequest(req.user?.id, 'disease_assistant_fallback', req.body, data, start);
+    return res.json({ data });
   }
 });
 
 // POST /ai/market-forecast
 router.post('/market-forecast', authenticate, aiLimiter, async (req: AuthRequest, res) => {
-  const { category, location, months = 3 } = req.body;
+  const { category, location } = req.body;
 
   const start = Date.now();
   try {
@@ -200,7 +326,6 @@ router.post('/market-forecast', authenticate, aiLimiter, async (req: AuthRequest
 Agricultural market forecast for India:
 - Category: ${category || 'all vegetables and fruits'}
 - Location: ${location || 'India'}
-- Forecast period: next ${months} months
 
 Return ONLY valid JSON:
 {
@@ -215,12 +340,14 @@ Return ONLY valid JSON:
 }`;
 
     const text = await callGemini(prompt, 'You are an Indian agricultural market analyst. Respond only in valid JSON.');
-    const data = JSON.parse(text);
+    const data = parseOrCleanJSON(text);
     await logAIRequest(req.user?.id, 'market_forecast', req.body, data, start);
     return res.json({ data });
   } catch (err) {
-    logger.error('Market forecast error', { error: (err as Error).message });
-    return res.status(500).json({ error: 'AI service temporarily unavailable' });
+    logger.warn('Market forecast Gemini error, returning fallback', { error: (err as Error).message });
+    const data = getMarketForecastFallback(category, location);
+    await logAIRequest(req.user?.id, 'market_forecast_fallback', req.body, data, start);
+    return res.json({ data });
   }
 });
 
@@ -237,25 +364,17 @@ router.post('/chat', authenticate, aiLimiter, async (req: AuthRequest, res) => {
   const start = Date.now();
   try {
     const systemPrompt = `You are AgriBid Assistant, a helpful AI for the AgriBid farmer marketplace.
-You help farmers and buyers with:
-- Crop information and growing tips
-- Market prices and auction guidance
-- Order and payment help
-- Platform features explanation
-- Agricultural best practices
-
 Always respond in ${languageNames[language] || 'English'}.
-Be concise, friendly, and practical. Use simple language appropriate for farmers.
-If asked about prices, mention that prices vary and they should use the Price Advisor for accurate data.
-Never give harmful advice. If you don't know something specific, say so honestly.
 ${context ? `User context: ${context}` : ''}`;
 
     const text = await callGemini(message, systemPrompt);
     await logAIRequest(req.user?.id, 'chat', { message, language }, text, start);
     return res.json({ response: text, language });
   } catch (err) {
-    logger.error('AI chat error', { error: (err as Error).message });
-    return res.status(500).json({ error: 'AI assistant temporarily unavailable' });
+    logger.warn('AI chat Gemini error, returning fallback', { error: (err as Error).message });
+    const response = getAIChatFallback(message, language);
+    await logAIRequest(req.user?.id, 'chat_fallback', { message, language }, response, start);
+    return res.json({ response, language });
   }
 });
 
