@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   Tractor, ShoppingCart, TrendingUp, Leaf, Zap, Shield,
   BarChart3, MessageSquare, MapPin, Star, ChevronRight,
@@ -105,6 +106,7 @@ export default function HomePage() {
           </nav>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link href="/auth/login">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>

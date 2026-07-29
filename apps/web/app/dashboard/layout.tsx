@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/auth.store';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   LayoutDashboard, Package, ShoppingBag, TrendingUp, Wallet,
   Bell, Settings, LogOut, Menu, X, Bot, MessageSquare,
@@ -168,16 +169,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </ScrollArea>
 
-      {/* Logout */}
-      <div className="p-4 border-t">
+      {/* Logout & Theme */}
+      <div className="p-4 border-t flex items-center justify-between gap-2">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+          className="flex-1 justify-start gap-3 text-muted-foreground hover:text-destructive text-sm"
           onClick={logout}
         >
           <LogOut className="h-4 w-4" />
           Sign Out
         </Button>
+        <ThemeToggle />
       </div>
     </div>
   );
@@ -212,9 +214,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <span className="font-bold">AgriBid</span>
           </div>
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
+          </div>
         </header>
 
         {/* Page Content */}
