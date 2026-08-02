@@ -89,19 +89,20 @@ function getNav(role: string): NavItem[] {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, accessToken, isAuthenticated, logout } = useAuthStore();
+  const { user, accessToken, isAuthenticated, logout, hasHydrated } = useAuthStore();
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (!isAuthenticated || !accessToken) {
       router.push('/auth/login');
     } else {
       setIsCheckingAuth(false);
     }
-  }, [isAuthenticated, accessToken, router]);
+  }, [hasHydrated, isAuthenticated, accessToken, router]);
 
   if (isCheckingAuth) {
     return (
