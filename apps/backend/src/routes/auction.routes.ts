@@ -102,6 +102,7 @@ router.post(
       bid_increment, starts_at, ends_at,
       anti_snipe_enabled, auto_bid_enabled
     } = req.body;
+    const initialStatus = new Date(starts_at) <= new Date() ? 'live' : 'scheduled';
 
     try {
       // Verify product belongs to farmer
@@ -125,7 +126,7 @@ router.post(
           bid_increment, starts_at, ends_at, status,
           anti_snipe_enabled, auto_bid_enabled,
           anti_snipe_threshold_minutes, anti_snipe_extension_minutes
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'scheduled',$9,$10,$11,$12) RETURNING *`,
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$13,$9,$10,$11,$12) RETURNING *`,
         [
           product_id, req.user!.id, start_price, reserve_price || null, buy_now_price || null,
           bid_increment || 10, starts_at, ends_at,
@@ -133,6 +134,7 @@ router.post(
           auto_bid_enabled !== false,
           parseInt(process.env.AUCTION_ANTI_SNIPE_THRESHOLD_MINUTES || '1', 10),
           parseInt(process.env.AUCTION_ANTI_SNIPE_EXTENSION_MINUTES || '2', 10),
+          initialStatus,
         ]
       );
 
